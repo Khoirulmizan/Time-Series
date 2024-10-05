@@ -25,7 +25,7 @@ This project uses R to analyze and predict Forex exchange rates. It covers the f
 
 ## Files
 
-- `ARIMA_Forex_Model_Prediction.Rmd`: R Markdown file containing the full analysis and model building process.
+- `ARIMA_Forex_Model_Prediction.md`: A Markdown file written in R containing the full analysis and model building process.
 - `forex_data.csv`: Dataset containing historical Forex exchange rates.
 
 ## Requirements
