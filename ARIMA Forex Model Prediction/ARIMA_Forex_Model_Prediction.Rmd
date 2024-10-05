@@ -1,0 +1,202 @@
+---
+title: "Model ARIMA untuk Prediksi Nilai Tukar Forex"
+author: "Kelompok 6 ADW RA"
+date: "5 Oktober 2024"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+# Pengaturan global untuk chunk
+knitr::opts_chunk$set(echo = TRUE)
+
+# Memuat library yang diperlukan
+library(forecast)
+library(tseries)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyr)
+library(zoo)
+```
+
+### 1. Memuat Data
+
+Kita akan menggunakan fungsi `read_csv()` untuk membaca dataset.
+
+```{r load-data}
+# Memuat dataset (Sesuaikan jalur file atau gunakan dataset nyata di R)
+data <- read_csv("forex_data.csv")
+
+# Menampilkan beberapa baris pertama dataset
+head(data)
+```
+
+#### Penjelasan:
+
+Langkah ini bertujuan untuk memuat data nilai tukar Forex ke dalam environment R. Kita menggunakan fungsi `read_csv()` dari paket `readr` untuk membaca data.
+
+### 2. Preprocessing Data
+
+Sebelum melakukan analisis lebih lanjut dengan model ARIMA, penting untuk memastikan bahwa data telah diolah dengan benar. Tahap ini termasuk menangani nilai yang hilang (missing values), memeriksa adanya outlier, dan melakukan normalisasi data jika diperlukan.
+
+#### Menangani Missing Values dan Interpolasi
+
+Langkah pertama adalah menangani nilai yang hilang dalam dataset. Kita akan memeriksa apakah ada missing values dan menangani mereka dengan cara yang sesuai, misalnya menggunakan interpolasi atau menghapus baris dengan missing values.
+
+```{r missing-values, message=FALSE}
+# Memeriksa missing values
+missing_summary <- colSums(is.na(data))
+print(missing_summary)
+
+# Menghapus kolom VEF dan menginterpolasi missing values dengan metode linear
+data_clean <- data %>%
+  select(-VEF) %>%  # Menghapus kolom VEF
+  mutate(across(everything(), ~ na.approx(., na.rm = FALSE)))  # Interpolasi missing values
+
+# Mengubah kolom 'Date' ke format datetime
+data_clean$Date <- as.Date(data_clean$Date)
+
+# Menampilkan data yang sudah dibersihkan dari missing values
+head(data_clean)
+```
+
+#### Penjelasan:
+
+Di sini, kita memeriksa dan menghitung jumlah nilai yang hilang (missing values) di dalam dataset. Kolom 'VEF' dihapus, dan kita menginterpolasi nilai yang hilang menggunakan metode linear. Kemudian, kolom 'Date' diubah ke format datetime agar dapat digunakan dalam analisis lebih lanjut.
+
+### 3. Analisis Data Eksploratif (EDA)
+
+Tahap ini dilakukan untuk memahami struktur dataset dan memvisualisasikan isi datanya.
+
+```{r}
+# Ubah data dari wide format ke long format
+datalong <- data_clean %>%
+  pivot_longer(cols = -Date, names_to = "Forex_Type", values_to = "Rate")
+
+# Membuat line chart untuk semua nilai tukar Forex
+ggplot(datalong, aes(x = Date, y = Rate, color = Forex_Type)) + 
+  geom_line() + 
+  labs(title = "Nilai Tukar Forex Seiring Waktu", x = "Tanggal", y = "Nilai Tukar Forex") + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r eda}
+# Statistik deskriptif dari dataset
+summary(data_clean)
+
+# Memvisualisasikan nilai tukar Forex dari waktu ke waktu
+ggplot(data_clean, aes(x = Date, y = USD)) +
+  geom_line(color = 'navy') +
+  labs(title = "Nilai Tukar Forex dari Waktu ke Waktu",
+       x = "Tanggal",
+       y = "Nilai Tukar Forex") +
+  theme_minimal()
+```
+
+#### Penjelasan:
+
+Pada tahap ini, kita menampilkan **statistik deskriptif** dataset dan membuat grafik garis yang menggambarkan **nilai tukar Forex** dari waktu ke waktu.
+
+### 4. Pengujian Stasioneritas dengan Augmented Dickey-Fuller (ADF) Test
+
+Kita perlu memastikan bahwa data deret waktu **stasioner** sebelum menerapkan model ARIMA.
+
+```{r adf-test}
+# Pengujian stasioneritas menggunakan Augmented Dickey-Fuller (ADF) Test
+adf_result <- adf.test(data_clean$USD, alternative = "stationary")
+
+# Menampilkan hasil uji ADF
+print(adf_result)
+```
+
+#### Penjelasan:
+
+Pengujian **Augmented Dickey-Fuller (ADF)** digunakan untuk mengecek apakah data sudah stasioner. Jika nilai p-value lebih kecil dari 0,05, maka data dianggap stasioner.
+
+### 5. Pendiferensian Data
+
+Jika hasil ADF test menunjukkan bahwa data tidak stasioner, kita akan melakukan proses **differencing**.
+
+```{r differencing}
+# Menerapkan differencing pada data
+data_diff <- diff(data_clean$USD)
+
+# Memvisualisasikan data yang sudah didifferensi
+ggplot() +
+  geom_line(aes(x = data_clean$Date[-1], y = data_diff), color = 'navy') +
+  labs(title = "Nilai Tukar Forex yang Sudah Didifferensi",
+       x = "Tanggal",
+       y = "Perubahan Nilai Tukar Forex") +
+  theme_minimal()
+```
+
+#### Penjelasan:
+
+Jika data tidak stasioner, kita menerapkan **differencing** untuk menghilangkan tren dan membuat data lebih stabil untuk model ARIMA.
+
+### 6. Plot ACF dan PACF
+
+Grafik **Autocorrelation Function (ACF)** dan **Partial Autocorrelation Function (PACF)** membantu dalam menentukan **orde** model ARIMA (p, d, q).
+
+```{r acf-pacf}
+# Plot ACF dan PACF
+acf(data_diff, main = "ACF dari Data yang Didifferensi")
+pacf(data_diff, main = "PACF dari Data yang Didifferensi")
+```
+
+#### Penjelasan:
+
+Grafik **ACF** digunakan untuk melihat hubungan data dengan lag sebelumnya, sedangkan **PACF** digunakan untuk menentukan urutan AR dalam model ARIMA.
+
+### 7. Penerapan Model ARIMA
+
+Selanjutnya, kita akan menerapkan model ARIMA menggunakan fungsi `auto.arima()`.
+
+```{r arima-model}
+# Membangun model ARIMA
+arima_model <- auto.arima(data_clean$USD)
+
+# Menampilkan ringkasan model
+summary(arima_model)
+```
+
+#### Penjelasan:
+
+Fungsi `auto.arima()` digunakan untuk memilih model ARIMA terbaik secara otomatis berdasarkan parameter optimal yang dihitung.
+
+### 8. Diagnostik Model
+
+Setelah model ARIMA dibuat, penting untuk mengecek residu model.
+
+```{r diagnostics}
+# Plot residu dan pengecekan pola residu
+checkresiduals(arima_model)
+```
+
+#### Penjelasan:
+
+Pada langkah ini, kita menganalisis **residu** model untuk memastikan bahwa tidak ada pola sistematis yang tersisa, yang menunjukkan bahwa model sudah cocok.
+
+### 9. Peramalan dengan Model ARIMA
+
+Langkah terakhir adalah melakukan peramalan nilai tukar Forex untuk beberapa periode ke depan.
+
+```{r forecasting}
+# Meramalkan 120 periode ke depan
+forecast_values <- forecast(arima_model, h = 120)
+
+# Plot hasil peramalan
+autoplot(forecast_values) +
+  labs(title = "Peramalan Nilai Tukar Forex Untuk h = 120",
+       x = "Tanggal",
+       y = "Nilai Tukar Forex Terprediksi")
+```
+
+#### Penjelasan:
+
+Dengan model ARIMA yang telah dibuat, kita dapat melakukan **peramalan** untuk jangka waktu ke depan (dalam hal ini, 120 periode). Grafik peramalan menunjukkan nilai tukar yang diprediksi beserta interval kepercayaannya.
+
+### 10. Kesimpulan
+
+Dalam analisis ini, kita telah membangun model ARIMA untuk memprediksi nilai tukar Forex. Dimulai dengan **analisis data eksploratif**, kemudian pengujian stasioneritas dengan **ADF Test**, dan juga, menerapkan **differencing**. Setelah itu, kita menggunakan **ACF** dan **PACF** untuk menentukan parameter ARIMA, membangun model, memeriksa residu, dan melakukan **peramalan** untuk beberapa periode ke depan. Dengan mengidentifikasi tren dan pola historis, model ARIMA memberikan peramalan yang dapat diandalkan asalkan datanya diproses dengan benar dan mengikuti prinsip analisis deret waktu yang tepat.
