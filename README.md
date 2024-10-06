@@ -57,8 +57,8 @@ install.packages(c("forecast", "tseries", "ggplot2", "dplyr", "readr", "tidyr", 
 
 ## Usage
 
-1. Open the `ARIMA_Forex_Model_Prediction.Rmd` file in RStudio or your preferred R environment.
-2. Make sure the `forex_data.csv` file is in the same directory as the .Rmd file.
+1. Open the `.Rmd` file from the available projects in RStudio or your preferred R environment.
+2. Make sure the `.csv` file is in the same directory as the .Rmd file.
 3. Run the R Markdown document to see the analysis, visualizations, and results.
 
 ## Contact
