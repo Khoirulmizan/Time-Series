@@ -9,7 +9,6 @@ This repository contains various time series analysis projects that focuses on d
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Contributing](#contributing)
 - [Contact](#contact)
 
 ## Projects
@@ -61,16 +60,6 @@ install.packages(c("forecast", "tseries", "ggplot2", "dplyr", "readr", "tidyr", 
 1. Open the `ARIMA_Forex_Model_Prediction.Rmd` file in RStudio or your preferred R environment.
 2. Make sure the `forex_data.csv` file is in the same directory as the .Rmd file.
 3. Run the R Markdown document to see the analysis, visualizations, and results.
-
-## Contributing
-
-Contributions to this project are welcome. Please follow these steps to contribute:
-
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ## Contact
 
