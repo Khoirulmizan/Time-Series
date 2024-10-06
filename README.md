@@ -19,7 +19,9 @@ This repository contains various time series analysis projects that focuses on d
 This project focuses on building an ARIMA (AutoRegressive Integrated Moving Average) model for predicting Forex exchange rates. It demonstrates data preprocessing, exploratory data analysis, stationarity testing, model building, and forecasting.
 
 #### Files:
-- `ARIMA_Forex_Model_Prediction.Rmd`: R Markdown file containing the analysis and model building process.
+- `ARIMA_Forex_Model_Prediction.Rmd`: An R Markdown file containing the full analysis and model building process.
+- `ARIMA-Forex-Model-Prediction.md` : A Mawrkdown file that is used to render images on github
+- `ARIMA-Forex-Model-Prediction_Files/figure-gfm` : A folder containing images that are used in the Markdown file
 - `forex_data.csv`: Dataset containing historical Forex exchange rates.
 
 ### To Be Decided
